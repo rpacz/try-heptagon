@@ -48,27 +48,29 @@ let width divid = (by_id divid)##.offsetWidth
 
 (** Manipulate the console *)
 module Console = struct
-  (** access to the console *)
-  let console = by_id "console"
+  (** access to the console — lazy so the module loads under a DOM-less JS
+      engine (ClearScript/V8); forced only when the browser UI actually logs *)
+  let console = lazy (by_id "console")
 
   (** Scroll the console to the bottom *)
   let scroll child =
-    console##.scrollTop := child##.offsetTop
+    (Lazy.force console)##.scrollTop := child##.offsetTop
 
   (** Log a message to the console *)
   let log msg =
     let newLine = of_node (T.(li [txt msg])) in
-    ignore (console##appendChild newLine);
+    ignore ((Lazy.force console)##appendChild newLine);
     scroll (Js.Unsafe.coerce newLine)
 
   (** Log an error message to the console *)
   let error msg =
     let newLine = of_node (T.(li ~a:[a_class ["console-error"]] [txt msg])) in
-    ignore (console##appendChild newLine);
+    ignore ((Lazy.force console)##appendChild newLine);
     scroll (Js.Unsafe.coerce newLine)
 
   (** Delete all lines on the console *)
   let clear () =
+    let console = Lazy.force console in
     while Js.to_bool console##hasChildNodes do
       Js.Opt.iter (console##.firstChild) (fun c -> Dom.removeChild console c)
     done

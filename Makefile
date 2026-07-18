@@ -16,6 +16,7 @@ SRC := \
 	page.ml \
 	js_obc_conversion.ml \
 	simul.ml interp.ml \
+	export.ml \
 	tryhept.ml \
 	pervasives.ml mathlib.ml
 

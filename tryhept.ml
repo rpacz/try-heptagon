@@ -95,7 +95,15 @@ let load_example editor name content =
   Page.clear_panels ();
   ignore Page.(create_panel Interpreter [])
 
+(* Install the headless ClearScript/V8 API (globalThis.tryhept) and reference
+   Export so ocamlbuild links it; must precede the DOM app init below. *)
+let () = Export.init ()
+
+let has_dom () =
+  Js.Optdef.test (Js.Unsafe.get Js.Unsafe.global (Js.string "document"))
+
 let _ =
+  if not (has_dom ()) then Lwt.return () else
   let* _ = download_pervasives () in
   let* _ = download_mathlib () in
 
