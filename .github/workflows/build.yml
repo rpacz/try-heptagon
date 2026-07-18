@@ -1,0 +1,46 @@
+name: build-tryhept
+
+on:
+  push:
+    branches: [clearscript-export]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The heptagon submodule remote is declared over ssh but serves anonymous https
+      - name: Rewrite submodule URL to https
+        run: git config --global url."https://git.recherche.enac.fr/".insteadOf "ssh://git@git.recherche.enac.fr/"
+
+      - name: Init submodules
+        run: git submodule update --init --recursive
+
+      - uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: "4.14.2"
+
+      # graphics is required so js_of_ocaml-lwt builds its .graphics sublibrary
+      - name: Install dependencies
+        run: >
+          opam install -y
+          ocamlbuild ocamlfind camlp4 menhir menhirLib ocamlgraph graphics
+          js_of_ocaml.5.8.2 js_of_ocaml-ppx.5.8.2 js_of_ocaml-tyxml.5.8.2 js_of_ocaml-lwt
+          ezjs_ace.0.1.1 chartjs.0.2.2
+
+      # README omits it: the submodule must be BUILT (heptc.byte + lib .epci), not just configured
+      - name: Build heptagon compiler
+        run: opam exec -- bash -c "cd heptagon && ./configure && make"
+
+      - name: Build tryhept.js
+        run: opam exec -- make
+
+      - name: Smoke test under node (no DOM)
+        run: node ci/smoke.js
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tryhept-js
+          path: tryhept.js

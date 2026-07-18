@@ -1,0 +1,5 @@
+{
+  "name": "tryhept-ocaml-build",
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "postCreateCommand": "bash ci/codespace-build.sh"
+}
